@@ -1,0 +1,250 @@
+service: citas-medicas
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  environment:
+    APPOINTMENTS_TABLE: ${self:service}-${self:provider.stage}-appointments
+    APPOINTMENT_TOPIC_PE: !Ref AppointmentTopicPE
+    APPOINTMENT_TOPIC_CL: !Ref AppointmentTopicCL
+    APPOINTMENT_QUEUE_PE: !Ref AppointmentQueuePE
+    APPOINTMENT_QUEUE_CL: !Ref AppointmentQueueCL
+    APPOINTMENT_EVENT_BUS: !Ref AppointmentEventBus
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: !GetAtt MyTable.Arn
+    # Añadir permisos para publicar en SNS y SQS
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource:
+        - !Ref AppointmentTopicPE
+        - !Ref AppointmentTopicCL
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+        - sqs:GetQueueAttributes
+      Resource:
+        - !GetAtt AppointmentQueuePE.Arn
+        - !GetAtt AppointmentQueueCL.Arn
+    # Permisos para EventBridge
+    - Effect: Allow
+      Action:
+        - events:PutEvents
+      Resource:
+        - !GetAtt AppointmentEventBus.Arn
+plugins:
+  - serverless-plugin-typescript
+
+functions:
+  hello:
+    handler: src/handlers/hello.handler
+    events:
+      - http:
+          path: hello
+          method: get
+  registerAppointment:
+    handler: src/handlers/appointment.register
+    events:
+      - http:
+          path: appointment
+          method: post
+  confirmAppointment:
+    handler: src/handlers/appointment.confirm
+    events:
+      - sqs:
+          arn: !GetAtt AppointmentConfirmationQueue.Arn
+          batchSize: 10
+          maximumBatchingWindow: 10
+  registerAppointmentPE:
+    handler: src/handlers/appointment_pe.register
+    events:
+      - sqs:
+          arn: !GetAtt AppointmentQueuePE.Arn
+          batchSize: 10
+          maximumBatchingWindow: 10
+  registerAppointmentCL:
+    handler: src/handlers/appointment_cl.register
+    events:
+      - sqs:
+          arn: !GetAtt AppointmentQueueCL.Arn
+          batchSize: 10
+          maximumBatchingWindow: 10
+  listAppointmentsByInsuredId:
+    handler: src/handlers/appointment.listByInsuredId
+    events:
+      - http:
+          path: appointment/{insuredId}
+          method: get
+
+resources:
+  Resources:
+    MyTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}-appointments
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: insuredId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: insuredId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+
+    # Tópico SNS para Perú
+    AppointmentTopicPE:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-${self:provider.stage}-appointments-pe
+        Tags:
+          - Key: Country
+            Value: PE
+
+    # Tópico SNS para Chile
+    AppointmentTopicCL:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-${self:provider.stage}-appointments-cl
+        Tags:
+          - Key: Country
+            Value: CL
+
+    # Cola SQS para Perú
+    AppointmentQueuePE:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-appointments-pe
+        VisibilityTimeout: 30 # 30 segundos
+        MessageRetentionPeriod: 1209600 # 14 días (máximo)
+        Tags:
+          - Key: Country
+            Value: PE
+
+    # Cola SQS para Chile
+    AppointmentQueueCL:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-appointments-cl
+        VisibilityTimeout: 30 # 30 segundos
+        MessageRetentionPeriod: 1209600 # 14 días (máximo)
+        Tags:
+          - Key: Country
+            Value: CL
+
+    # Política de la cola SQS para Perú (permite que SNS envíe mensajes)
+    AppointmentQueuePEPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref AppointmentQueuePE
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action: "sqs:SendMessage"
+              Resource: !GetAtt AppointmentQueuePE.Arn
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn": !Ref AppointmentTopicPE
+
+    # Política de la cola SQS para Chile (permite que SNS envíe mensajes)
+    AppointmentQueueCLPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref AppointmentQueueCL
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action: "sqs:SendMessage"
+              Resource: !GetAtt AppointmentQueueCL.Arn
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn": !Ref AppointmentTopicCL
+
+    # Suscripción de la cola SQS de Perú al tópico SNS de Perú
+    AppointmentSubscriptionPE:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        Endpoint: !GetAtt AppointmentQueuePE.Arn
+        TopicArn: !Ref AppointmentTopicPE
+        RawMessageDelivery: true
+
+    # Suscripción de la cola SQS de Chile al tópico SNS de Chile
+    AppointmentSubscriptionCL:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        Endpoint: !GetAtt AppointmentQueueCL.Arn
+        TopicArn: !Ref AppointmentTopicCL
+        RawMessageDelivery: true
+
+    # EventBridge Bus
+    AppointmentEventBus:
+      Type: AWS::Events::EventBus
+      Properties:
+        Name: ${self:service}-${self:provider.stage}-appointment-bus
+
+    # Cola SQS para recibir eventos de confirmación de EventBridge
+    AppointmentConfirmationQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-appointment-confirmations
+        VisibilityTimeout: 30
+        MessageRetentionPeriod: 1209600 # 14 días
+        Tags:
+          - Key: Purpose
+            Value: EventBridgeConfirmations
+
+    # Política para permitir que EventBridge publique en la cola SQS
+    AppointmentConfirmationQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref AppointmentConfirmationQueue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: events.amazonaws.com
+              Action: "sqs:SendMessage"
+              Resource: !GetAtt AppointmentConfirmationQueue.Arn
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn": !GetAtt AppointmentConfirmationRule.Arn
+
+    # Regla de EventBridge para enviar eventos a la cola SQS
+    AppointmentConfirmationRule:
+      Type: AWS::Events::Rule
+      Properties:
+        EventBusName: !Ref AppointmentEventBus
+        Description: "Regla para enviar eventos de confirmación de citas a SQS"
+        EventPattern:
+          source:
+            - "appointment.service"
+          detail-type:
+            - "appointment.registered"
+        State: ENABLED
+        Targets:
+          - Arn: !GetAtt AppointmentConfirmationQueue.Arn
+            Id: "AppointmentConfirmationQueue"
