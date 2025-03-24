@@ -2,7 +2,6 @@ import { DynamoDB } from "aws-sdk";
 import { Appointment } from "../models/Appointment";
 import mysql2 from "mysql2/promise";
 
-// Obtener variables de entorno de MYSQL
 const dbConfig = {
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -26,7 +25,6 @@ export class AppointmentRepository {
 
     await this.client.put(params).promise();
 
-    // Grabar en la tabla de MySQL Appointments
     const connection = await mysql2.createConnection(dbConfig);
     await connection.execute(
       "INSERT INTO Appointments (insuredId, createdAt, scheduledId, countryISO) VALUES (?, ?, ?, ?)",

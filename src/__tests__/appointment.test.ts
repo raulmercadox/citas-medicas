@@ -8,7 +8,6 @@ import {
   Callback,
 } from "aws-lambda";
 
-// Mock directo de módulos
 jest.mock("../services/AppointmentService");
 jest.mock("../repositories/AppointmentRepository");
 
@@ -31,7 +30,6 @@ describe("Register an Empty Appointment", () => {
 });
 
 describe("Register a valid appointment", () => {
-  // Definir el objeto de respuesta mock
   const mockAppointmentResponse = {
     appointmentId: "123456",
     insuredId: "543",
@@ -41,11 +39,9 @@ describe("Register a valid appointment", () => {
     createdAt: new Date().toISOString(),
   };
 
-  // Función mock para el método register
   const mockRegisterFn = jest.fn().mockResolvedValue(mockAppointmentResponse);
 
   beforeEach(() => {
-    // Limpiar todos los mocks
     jest.clearAllMocks();
 
     AppointmentService.prototype.register = mockRegisterFn;
@@ -80,13 +76,10 @@ describe("Register a valid appointment", () => {
       mockCallback
     )) as APIGatewayProxyResult;
 
-    // Verificar la respuesta correcta
     expect(response.statusCode).toBe(200);
 
-    // Verificar que el método register fue llamado con los parámetros correctos
     expect(mockRegisterFn).toHaveBeenCalledWith("543", 546, "PE");
 
-    // Verificar el body de la respuesta
     const responseBody = JSON.parse(response.body);
     expect(responseBody).toEqual(mockAppointmentResponse);
   });

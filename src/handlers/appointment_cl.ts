@@ -11,18 +11,15 @@ const dbConfig = {
 export const register: SQSHandler = async (event: SQSEvent) => {
   console.log("Procesando mensajes de la cola de Perú (PE)");
 
-  // Inicializar el cliente de EventBridge
   const eventBridge = new EventBridge();
 
   for (const record of event.Records) {
     try {
       console.log(`Procesando mensaje: ${record.messageId}`);
 
-      // Parsear el mensaje
       const appointmentData = JSON.parse(record.body);
       const { insuredId, createdAt, scheduledId, countryISO } = appointmentData;
 
-      // Aquí implementarías la lógica específica para Chile
       console.log(
         `Procesando cita para el asegurado ${appointmentData.insuredId} en Chile`
       );

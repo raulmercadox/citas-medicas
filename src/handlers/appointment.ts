@@ -11,12 +11,10 @@ export const register: APIGatewayProxyHandler = async (event) => {
       };
     }
 
-    // Analizar el body JSON para convertirlo en un objeto
     const body = JSON.parse(event.body);
 
     const { insuredId, scheduleId, countryISO } = body;
 
-    // Verificar si todos los campos requeridos están presentes
     if (!insuredId || !scheduleId || !countryISO) {
       return {
         statusCode: 400,
@@ -33,7 +31,6 @@ export const register: APIGatewayProxyHandler = async (event) => {
       countryISO,
     });
 
-    // Procesar los datos y realizar la lógica de negocio
     const appointmentService = new AppointmentService(
       new AppointmentRepository()
     );
@@ -50,7 +47,6 @@ export const register: APIGatewayProxyHandler = async (event) => {
   } catch (error) {
     console.error("Error processing request:", error);
 
-    // Verificar si el error es de análisis JSON
     if (error instanceof SyntaxError) {
       return {
         statusCode: 400,
@@ -58,7 +54,6 @@ export const register: APIGatewayProxyHandler = async (event) => {
       };
     }
 
-    // Para otros errores, devolver un error 500
     return {
       statusCode: 500,
       body: JSON.stringify({ message: "Internal server error" }),
@@ -75,7 +70,6 @@ export const confirm: SQSHandler = async (event: SQSEvent) => {
       const insuredId = detail.insuredId;
       const createdAt = detail.createdAt;
 
-      // Actualizar el appointment con el estado confirmado
       const appointmentService = new AppointmentService(
         new AppointmentRepository()
       );
