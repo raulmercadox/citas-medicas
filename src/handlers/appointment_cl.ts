@@ -1,3 +1,4 @@
+// src/handlers/appointment_cl.ts
 import { SQSEvent, SQSHandler } from "aws-lambda";
 import { EventBridge } from "aws-sdk";
 // import { Appointment } from "../models/appointment";

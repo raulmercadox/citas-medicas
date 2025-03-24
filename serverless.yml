@@ -12,6 +12,11 @@ provider:
     APPOINTMENT_QUEUE_PE: !Ref AppointmentQueuePE
     APPOINTMENT_QUEUE_CL: !Ref AppointmentQueueCL
     APPOINTMENT_EVENT_BUS: !Ref AppointmentEventBus
+    # MySQL credentials
+    DB_HOST: ${env:DB_HOST}
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_DATABASE: ${env:DB_DATABASE}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -48,12 +53,6 @@ plugins:
   - serverless-plugin-typescript
 
 functions:
-  hello:
-    handler: src/handlers/hello.handler
-    events:
-      - http:
-          path: hello
-          method: get
   registerAppointment:
     handler: src/handlers/appointment.register
     events:
@@ -85,7 +84,7 @@ functions:
     handler: src/handlers/appointment.listByInsuredId
     events:
       - http:
-          path: appointment/{insuredId}
+          path: appointments/{insuredId}
           method: get
 
 resources:

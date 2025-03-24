@@ -1,0 +1,141 @@
+openapi: 3.0.0
+info:
+  title: Appointment API
+  description: API para agendar citas médicas en Perú y Chile.
+  version: 1.0.0
+servers:
+  - url: https://<API_GATEWAY_URL>
+    description: Servidor de producción
+paths:
+  /appointment:
+    post:
+      summary: Registra una nueva cita médica.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                insuredId:
+                  type: string
+                  description: ID del asegurado.
+                scheduleId:
+                  type: integer
+                  description: ID del horario seleccionado.
+                countryISO:
+                  type: string
+                  description: Código ISO del país (PE o CL).
+              example:
+                insuredId: "12345"
+                scheduleId: 100
+                countryISO: "PE"
+      responses:
+        "200":
+          description: Cita registrada exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  appointmentId:
+                    type: string
+                  insuredId:
+                    type: string
+                  scheduleId:
+                    type: integer
+                  countryISO:
+                    type: string
+                  status:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                example:
+                  appointmentId: "123456"
+                  insuredId: "12345"
+                  scheduleId: 100
+                  countryISO: "PE"
+                  status: "REGISTERED"
+                  createdAt: "2024-03-09T12:30:00Z"
+        "400":
+          description: Solicitud inválida.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: "Body is required"
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: "Internal server error"
+  /appointment/{insuredId}:
+    get:
+      summary: Obtiene todas las citas de un asegurado.
+      parameters:
+        - name: insuredId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del asegurado.
+      responses:
+        "200":
+          description: Lista de citas del asegurado.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    insuredId:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
+                    scheduleId:
+                      type: integer
+                    countryISO:
+                      type: string
+                    status:
+                      type: string
+                example:
+                  - insuredId: "12345"
+                    createdAt: "2024-03-09T12:30:00Z"
+                    scheduleId: 100
+                    countryISO: "PE"
+                    status: "completed"
+        "400":
+          description: Solicitud inválida.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: "insuredId is required"
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: "Internal server error"

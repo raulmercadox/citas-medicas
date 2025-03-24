@@ -1,6 +1,8 @@
-// src/handlers/hello.test.ts
+// src/__tests__/appointment.test.ts
 
-import { register, confirm } from "../handlers/appointment";
+import { register } from "../handlers/appointment";
+import { AppointmentService } from "../services/AppointmentService";
+import { AppointmentRepository } from "../repositories/AppointmentRepository";
 
 import {
   APIGatewayProxyResult,
@@ -9,27 +11,88 @@ import {
   Callback,
 } from "aws-lambda";
 
-describe("Register Appointment", () => {
-  it("should return a 200 response with a hello message", async () => {
-    // Mock the event object
-    const mockEvent = {} as APIGatewayEvent;
+// Mock directo de módulos
+jest.mock("../services/AppointmentService");
+jest.mock("../repositories/AppointmentRepository");
 
-    // Mock context and callback (not used in this function but included for completeness)
+describe("Register an Empty Appointment", () => {
+  it("should return a 400 response with a message", async () => {
+    const mockEvent = {} as APIGatewayEvent;
     const mockContext = {} as Context;
     const mockCallback = {} as Callback;
 
-    // Call the handler function and explicitly type the response
     const response = (await register(
       mockEvent,
       mockContext,
       mockCallback
     )) as APIGatewayProxyResult;
 
-    // Assert the expected results
+    expect(response.statusCode).toBe(400);
+    const body = JSON.parse(response.body);
+    expect(body.message).toBe("Body is required");
+  });
+});
+
+describe("Register a valid appointment", () => {
+  // Definir el objeto de respuesta mock
+  const mockAppointmentResponse = {
+    appointmentId: "123456",
+    insuredId: "543",
+    scheduleId: 546,
+    countryISO: "PE",
+    status: "REGISTERED",
+    createdAt: new Date().toISOString(),
+  };
+
+  // Función mock para el método register
+  const mockRegisterFn = jest.fn().mockResolvedValue(mockAppointmentResponse);
+
+  beforeEach(() => {
+    // Limpiar todos los mocks
+    jest.clearAllMocks();
+
+    // IMPORTANTE: Reemplazar el prototipo del constructor con nuestra implementación mock
+    // Esto asegura que cualquier nueva instancia de AppointmentService usará nuestro mock
+    AppointmentService.prototype.register = mockRegisterFn;
+  });
+
+  it("should return a 200 message", async () => {
+    const mockEvent = {
+      body: JSON.stringify({
+        insuredId: "543",
+        scheduleId: 546,
+        countryISO: "PE",
+      }),
+      headers: { "Content-Type": "application/json" },
+      multiValueHeaders: {},
+      httpMethod: "POST",
+      isBase64Encoded: false,
+      path: "",
+      pathParameters: null,
+      queryStringParameters: null,
+      multiValueQueryStringParameters: null,
+      stageVariables: null,
+      requestContext: {} as any,
+      resource: "",
+    } as APIGatewayEvent;
+
+    const mockContext = {} as Context;
+    const mockCallback = {} as Callback;
+
+    const response = (await register(
+      mockEvent,
+      mockContext,
+      mockCallback
+    )) as APIGatewayProxyResult;
+
+    // Verificar la respuesta correcta
     expect(response.statusCode).toBe(200);
 
-    // Parse the JSON body to verify the message
-    const body = JSON.parse(response.body);
-    expect(body.message).toBe("Register Appointment");
+    // Verificar que el método register fue llamado con los parámetros correctos
+    expect(mockRegisterFn).toHaveBeenCalledWith("543", 546, "PE");
+
+    // Verificar el body de la respuesta
+    const responseBody = JSON.parse(response.body);
+    expect(responseBody).toEqual(mockAppointmentResponse);
   });
 });

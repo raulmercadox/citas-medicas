@@ -1,3 +1,5 @@
+// src/services/AppointmentService.ts
+
 import { SNS } from "aws-sdk";
 import { Appointment } from "../models/Appointment";
 import { AppointmentRepository } from "../repositories/AppointmentRepository";
