@@ -1,5 +1,3 @@
-// src/handlers/appointment.ts
-
 import { APIGatewayProxyHandler, SQSEvent, SQSHandler } from "aws-lambda";
 import { AppointmentService } from "../services/AppointmentService";
 import { AppointmentRepository } from "../repositories/AppointmentRepository";
@@ -16,7 +14,6 @@ export const register: APIGatewayProxyHandler = async (event) => {
     // Analizar el body JSON para convertirlo en un objeto
     const body = JSON.parse(event.body);
 
-    // Ahora puedes acceder a los campos específicos
     const { insuredId, scheduleId, countryISO } = body;
 
     // Verificar si todos los campos requeridos están presentes
@@ -91,8 +88,6 @@ export const confirm: SQSHandler = async (event: SQSEvent) => {
 
 export const listByInsuredId: APIGatewayProxyHandler = async (event) => {
   try {
-    // get insuredId from the path parameters appointment/{insuredId}
-
     const insuredId = event.pathParameters
       ? event.pathParameters.insuredId
       : null;

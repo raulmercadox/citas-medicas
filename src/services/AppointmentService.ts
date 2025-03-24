@@ -1,5 +1,3 @@
-// src/services/AppointmentService.ts
-
 import { SNS } from "aws-sdk";
 import { Appointment } from "../models/Appointment";
 import { AppointmentRepository } from "../repositories/AppointmentRepository";
@@ -50,7 +48,6 @@ export class AppointmentService {
           TopicArn: topicArn,
           Message: JSON.stringify(appointment),
           MessageAttributes: {
-            // Podemos añadir atributos para filtrado si es necesario
             countryISO: {
               DataType: "String",
               StringValue: countryISO,
@@ -61,9 +58,7 @@ export class AppointmentService {
 
       console.log(`Mensaje publicado exitosamente en SNS para ${countryISO}`);
     } catch (error) {
-      // Capturamos errores pero no interrumpimos el flujo principal
       console.error(`Error al publicar en SNS para ${countryISO}:`, error);
-      // No relanzamos el error ya que la cita ya fue guardada en la base de datos
     }
 
     return appointment;

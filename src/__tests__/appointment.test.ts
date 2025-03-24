@@ -1,8 +1,5 @@
-// src/__tests__/appointment.test.ts
-
 import { register } from "../handlers/appointment";
 import { AppointmentService } from "../services/AppointmentService";
-import { AppointmentRepository } from "../repositories/AppointmentRepository";
 
 import {
   APIGatewayProxyResult,
@@ -51,8 +48,6 @@ describe("Register a valid appointment", () => {
     // Limpiar todos los mocks
     jest.clearAllMocks();
 
-    // IMPORTANTE: Reemplazar el prototipo del constructor con nuestra implementación mock
-    // Esto asegura que cualquier nueva instancia de AppointmentService usará nuestro mock
     AppointmentService.prototype.register = mockRegisterFn;
   });
 

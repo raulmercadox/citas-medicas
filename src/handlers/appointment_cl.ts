@@ -1,7 +1,5 @@
-// src/handlers/appointment_cl.ts
 import { SQSEvent, SQSHandler } from "aws-lambda";
 import { EventBridge } from "aws-sdk";
-// import { Appointment } from "../models/appointment";
 
 const dbConfig = {
   host: process.env.MYSQL_HOST,
@@ -39,10 +37,8 @@ export const register: SQSHandler = async (event: SQSEvent) => {
               Detail: JSON.stringify({
                 status: "SUCCESS",
                 country: countryISO,
-                // Incluir los valores HASH y RANGE
                 insuredId: insuredId,
                 createdAt: createdAt,
-                // Información adicional que podría ser útil
                 scheduledId: scheduledId,
                 processedAt: new Date().toISOString(),
                 messageId: record.messageId,
@@ -55,16 +51,8 @@ export const register: SQSHandler = async (event: SQSEvent) => {
       console.log(
         `Evento enviado a EventBridge: ${JSON.stringify(eventResult)}`
       );
-
-      // Ejemplos de lo que podrías hacer:
-      // - Enviar notificaciones específicas para Chile
-      // - Actualizar sistemas externos de Chile
-      // - Generar documentación según normativas de Chile
     } catch (error) {
       console.error(`Error procesando mensaje ${record.messageId}:`, error);
-      // En caso de error, puedes decidir si quieres que el mensaje vuelva a la cola
-      // Si lanzas una excepción aquí, fallará todo el batch
-      // Si sólo registras el error, el mensaje se considerará procesado
     }
   }
 

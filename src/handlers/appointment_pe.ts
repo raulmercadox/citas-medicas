@@ -1,7 +1,5 @@
-// src/handlers/appointment_pe.ts
 import { SQSEvent, SQSHandler } from "aws-lambda";
 import { EventBridge } from "aws-sdk";
-// import { Appointment } from "../models/appointment";
 
 const dbConfig = {
   host: process.env.MYSQL_HOST,
@@ -29,11 +27,6 @@ export const register: SQSHandler = async (event: SQSEvent) => {
         `Procesando cita para el asegurado ${appointmentData.insuredId} en Perú`
       );
 
-      // Ejemplos de lo que podrías hacer:
-      // - Enviar notificaciones específicas para Perú
-      // - Actualizar sistemas externos de Perú
-      // - Generar documentación según normativas de Perú
-
       // Enviar evento a EventBridge como confirmación
       const eventResult = await eventBridge
         .putEvents({
@@ -45,10 +38,8 @@ export const register: SQSHandler = async (event: SQSEvent) => {
               Detail: JSON.stringify({
                 status: "SUCCESS",
                 country: countryISO,
-                // Incluir los valores HASH y RANGE
                 insuredId: insuredId,
                 createdAt: createdAt,
-                // Información adicional que podría ser útil
                 scheduledId: scheduledId,
                 processedAt: new Date().toISOString(),
                 messageId: record.messageId,
@@ -59,9 +50,6 @@ export const register: SQSHandler = async (event: SQSEvent) => {
         .promise();
     } catch (error) {
       console.error(`Error procesando mensaje ${record.messageId}:`, error);
-      // En caso de error, puedes decidir si quieres que el mensaje vuelva a la cola
-      // Si lanzas una excepción aquí, fallará todo el batch
-      // Si sólo registras el error, el mensaje se considerará procesado
     }
   }
 

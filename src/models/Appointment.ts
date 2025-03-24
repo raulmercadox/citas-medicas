@@ -1,6 +1,4 @@
-// src/models/Appointment.ts
 export class Appointment {
-  // Propiedades inmutables (usando readonly)
   readonly insuredId: string;
   readonly createdAt: string;
 
